@@ -1,5 +1,15 @@
 ﻿using System;
-
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
+using System.Web;
+using System.Net.Http;
 namespace smart_local
 {
     /// Main Prog
@@ -37,7 +47,45 @@ namespace smart_local
             System.Console.WriteLine($"Authorize URL: {authorizeUrl}");
             System.Console.WriteLine($"    Token URL: {tokenUrl}");
             _tokenUrl = tokenUrl;
+            CreateHostBuilder().Build().Start();
+            int listenPort = GetListenPort().Result;
+            System.Console.WriteLine($"Listening on Port: {listenPort}");
+            for (int loops = 0; loops < 30; loops++)
+            {
+                System.Threading.Thread.Sleep(1000);
+            }
+
+
             return 0;
         }
+        public static async Task<int> GetListenPort()
+        {
+            for (int loops = 0; loops < 100; loops++)
+            {
+                await Task.Delay(100);
+                string address = Startup.Addresseses.Addresses.FirstOrDefault();
+
+                if ((string.IsNullOrEmpty(address))
+                || (address.Length < 18))
+                {
+                    continue;
+                }
+                if (int.TryParse(address.Substring(17), out int port))
+                {
+                    return port;
+                }
+            }
+            throw new Exception("Failed to find an open port!");
+        }
+
+        ///
+        public static IHostBuilder CreateHostBuilder() =>
+            Host.CreateDefaultBuilder()
+                .ConfigureWebHostDefaults(webBuilder =>
+                {
+                    webBuilder.UseUrls("http://127.0.0.1:0");
+                    webBuilder.UseKestrel();
+                    webBuilder.UseStartup<Startup>();
+                });
     }
 }
